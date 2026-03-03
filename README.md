@@ -23,7 +23,7 @@ A PHP-based email queue dashboard for managing, routing, and forwarding inbound 
 | SMTP | [phpmailer/phpmailer](https://github.com/PHPMailer/PHPMailer) ^7.0 |
 | Frontend | Vanilla HTML / CSS / JavaScript |
 | Charts | [Chart.js](https://www.chartjs.org/) (CDN) |
-| Test mail server | [GreenMail](https://greenmail-mail-test.github.io/greenmail/) standalone JAR |
+| Test mail server | [GreenMail](https://greenmail-mail-test.github.io/greenmail/) standalone JAR (not included) |
 
 ## Project Structure
 
@@ -44,7 +44,6 @@ MailVisTool/
 ├── full_metadata_test.php  # Same as inspect_metadata.php
 ├── check_sent_emails.php   # CLI utility: lists emails forwarded from the dashboard
 ├── composer.json
-├── greenmail-standalone-2.1.8.jar
 ├── assets/
 │   ├── dashboard.js        # All frontend logic
 │   └── dashboard.css       # Dashboard styles
@@ -52,22 +51,67 @@ MailVisTool/
     └── mailvis.db          # SQLite database (auto-created)
 ```
 
-## Requirements
-
-- PHP 8.1+ with extensions: `pdo`, `pdo_sqlite`, `imap` (or sockets)
-- [Composer](https://getcomposer.org/)
-- Java 11+ (only needed to run the bundled GreenMail test server)
-- An IMAP-accessible mailbox (real or GreenMail)
-
 ## Installation
 
-### 1. Install PHP dependencies
+### 1. Install PHP
+
+The app requires PHP 8.1 or newer with the `pdo` and `pdo_sqlite` extensions. These are included in most standard PHP distributions.
+
+**macOS (Homebrew)**
 
 ```bash
+brew install php
+```
+
+**Ubuntu / Debian**
+
+```bash
+sudo apt update
+sudo apt install php php-cli php-sqlite3
+```
+
+**Windows**
+
+Download a pre-built binary from [windows.php.net](https://windows.php.net/download/). The thread-safe x64 build includes PDO and SQLite by default. Add the install directory to your `PATH`.
+
+Verify your installation:
+
+```bash
+php -v
+php -m | grep -E "pdo|sqlite"
+```
+
+### 2. Install Composer
+
+[Composer](https://getcomposer.org/) is the PHP dependency manager used to install the IMAP and SMTP libraries.
+
+**macOS (Homebrew)**
+
+```bash
+brew install composer
+```
+
+**Linux / macOS (direct)**
+
+```bash
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+php -r "unlink('composer-setup.php');"
+```
+
+**Windows**
+
+Download and run the [Composer installer](https://getcomposer.org/Composer-Setup.exe).
+
+### 3. Clone the repo and install dependencies
+
+```bash
+git clone <repo-url> MailVisTool
+cd MailVisTool
 composer install
 ```
 
-### 2. Configure
+### 4. Configure
 
 Edit [config.php](config.php) to point at your IMAP and SMTP server:
 
@@ -99,15 +143,15 @@ Edit [config.php](config.php) to point at your IMAP and SMTP server:
 ],
 ```
 
-### 3. Set up the database
+### 5. Set up the database
 
-The database is created automatically when the app first runs. To set it up manually (and seed default routing rules from `config.php`):
+The SQLite database is created automatically on the first request. To set it up manually and seed routing rules from `config.php`:
 
 ```bash
 php setup_database.php
 ```
 
-### 4. Serve the app
+### 6. Serve the app
 
 Any PHP-capable web server works. For local development:
 
@@ -119,22 +163,45 @@ Then open `http://localhost:8000` in your browser.
 
 ## Using GreenMail for Local Testing
 
-The bundled `greenmail-standalone-2.1.8.jar` runs a local IMAP/SMTP server — no real email account needed.
+[GreenMail](https://greenmail-mail-test.github.io/greenmail/) is a self-contained Java mail server that provides IMAP and SMTP without needing a real email account.
+
+### Prerequisites
+
+Java 11 or newer is required. Check with `java -version`. If not installed:
+
+- **macOS:** `brew install openjdk`
+- **Ubuntu / Debian:** `sudo apt install default-jre`
+- **Windows:** download from [adoptium.net](https://adoptium.net/)
+
+### Download GreenMail
 
 ```bash
-# Start GreenMail (SMTP on 3025, IMAP on 3143)
-java -jar greenmail-standalone-2.1.8.jar \
+curl -L -o greenmail-standalone.jar \
+  https://github.com/greenmail-mail-test/greenmail/releases/download/greenmail-2.1.3/greenmail-standalone-2.1.3.jar
+```
+
+Or download the latest standalone JAR from the [GreenMail releases page](https://github.com/greenmail-mail-test/greenmail/releases).
+
+### Start GreenMail
+
+```bash
+# SMTP on port 3025, IMAP on port 3143
+java -jar greenmail-standalone.jar \
   --greenmail.setup.test.all \
   --greenmail.users=test1:test1@localhost
 ```
 
-The default `config.php` is already configured for GreenMail. Send test emails and verify the IMAP connection:
+The default `config.php` is already configured for these ports and credentials.
+
+### Verify the connection
+
+Send a test email via SMTP and read it back via IMAP:
 
 ```bash
 php test_greenmail.php
 ```
 
-Send a batch of test emails with varied metadata:
+Send a batch of test emails with varied priorities and metadata:
 
 ```bash
 php inspect_metadata.php
