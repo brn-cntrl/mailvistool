@@ -1,0 +1,7 @@
+{
+    "name": "brncntrl/mail-vis-tool",
+    "require": {
+        "webklex/php-imap": "^6.2",
+        "phpmailer/phpmailer": "^7.0"
+    }
+}
