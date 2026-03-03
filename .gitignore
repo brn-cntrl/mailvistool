@@ -1,0 +1,21 @@
+greenmail-standalone-2.1.8.jar
+vendor/
+
+# Database folder - keep structure but ignore contents
+database/*
+!database/
+!database/.gitkeep
+*.db
+*.sqlite
+
+# Logs
+*.log
+error.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
