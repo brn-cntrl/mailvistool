@@ -26,9 +26,9 @@ return [
 
     // Available recipients for dropdown
     'recipients' => [
-        ['email' => 'david@anfarch.com', 'name' => 'David'],
-        ['email' => 'melissa@anfarch.com', 'name' => 'Melissa'],
-        ['email' => 'admin@anfarch.com', 'name' => 'Admin'],
+        ['email' => 'user1@anfarch.com', 'name' => 'USER1'],
+        ['email' => 'user2@anfarch.com', 'name' => 'USER2'],
+        ['email' => 'admin@anfarch.com', 'name' => 'ADMIN'],
     ],
     
     // Default routing rules (edit as needed)
@@ -37,13 +37,13 @@ return [
         // Add your actual rules here when you know them
         // Examples:
         // 'project proposal' => [
-        //     'email' => 'david@anfarch.com',
-        //     'name' => 'David',
+        //     'email' => 'user1@anfarch.com',
+        //     'name' => 'USER1',
         //     'priority' => 10
         // ],
         // 'basic inquiry' => [
-        //     'email' => 'melissa@anfarch.com', 
-        //     'name' => 'Melissa',
+        //     'email' => 'user2@anfarch.com', 
+        //     'name' => 'USER2',
         //     'priority' => 5
         // ],
     ],
