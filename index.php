@@ -10,7 +10,10 @@
     <div class="container">
         <header class="header">
             <h1>MailOps</h1>
-            <button id="syncBtn" class="btn btn-primary">🔄 Sync Emails</button>
+            <div>
+                <button id="manageRecipientsBtn" class="btn btn-secondary" style="margin-right: 10px;">⚙️ Manage Recipients</button>
+                <button id="syncBtn" class="btn btn-primary">🔄 Sync Emails</button>
+            </div>
         </header>
         <div class="stats-grid">
             <div class="stat-card">
@@ -89,7 +92,56 @@
             </div>
         </div>
     </div>
+    
+    <!-- Manage Recipients Modal -->
+    <div id="recipientsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRecipientsModal()">&times;</span>
+            <h2>Manage Recipients</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <button id="addRecipientBtn" class="btn btn-success">➕ Add Recipient</button>
+            </div>
+            
+            <table class="email-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="recipientsTableBody">
+                    <tr><td colspan="3" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
+    <!-- Add/Edit Recipient Modal -->
+    <div id="recipientFormModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeRecipientForm()">&times;</span>
+            <h2 id="recipientFormTitle">Add Recipient</h2>
+            
+            <form id="recipientForm" onsubmit="saveRecipient(event)">
+                <input type="hidden" id="recipientId" value="">
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Name:</label>
+                    <input type="text" id="recipientName" required style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Email:</label>
+                    <input type="email" id="recipientEmail" required style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                </div>
+                
+                <button type="submit" class="btn btn-success">Save</button>
+                <button type="button" class="btn" onclick="closeRecipientForm()" style="margin-left: 10px; background: #cbd5e0;">Cancel</button>
+            </form>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="assets/dashboard.js"></script>
 </body>

@@ -25,11 +25,11 @@ return [
     ],
 
     // Available recipients for dropdown
-    'recipients' => [
-        ['email' => 'user1@anfarch.com', 'name' => 'USER1'],
-        ['email' => 'user2@anfarch.com', 'name' => 'USER2'],
-        ['email' => 'admin@anfarch.com', 'name' => 'ADMIN'],
-    ],
+    // 'recipients' => [
+    //     ['email' => 'user1@anfarch.com', 'name' => 'USER1'],
+    //     ['email' => 'user2@anfarch.com', 'name' => 'USER2'],
+    //     ['email' => 'admin@anfarch.com', 'name' => 'ADMIN'],
+    // ],
     
     // Default routing rules (edit as needed)
     // Format: ['keyword' => ['email' => '...', 'name' => '...', 'priority' => N]]

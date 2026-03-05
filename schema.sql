@@ -73,3 +73,13 @@ CREATE INDEX IF NOT EXISTS idx_emails_date ON emails(date_received);
 CREATE INDEX IF NOT EXISTS idx_emails_recipient ON emails(intended_recipient);
 CREATE INDEX IF NOT EXISTS idx_emails_read ON emails(is_read);
 CREATE INDEX IF NOT EXISTS idx_emails_actioned ON emails(is_actioned);
+
+-- Recipients table for managing assignable email addresses
+CREATE TABLE IF NOT EXISTS recipients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

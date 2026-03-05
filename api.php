@@ -162,10 +162,75 @@ try {
             break;
             
         case 'get_recipients':
-            // Get available recipients from config
-            $config = require 'config.php';
-            $recipients = $config['recipients'] ?? [];
+            $stmt = $db->query('SELECT id, name, email FROM recipients WHERE is_active = 1 ORDER BY name ASC');
+            $recipients = $stmt->fetchAll();
             echo json_encode(['success' => true, 'data' => $recipients]);
+            break;
+            
+        case 'add_recipient':
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $name = $_POST['name'] ?? '';
+                $email = $_POST['email'] ?? '';
+                
+                if (empty($name) || empty($email)) {
+                    echo json_encode(['success' => false, 'error' => 'Name and email required']);
+                    break;
+                }
+                
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    echo json_encode(['success' => false, 'error' => 'Invalid email address']);
+                    break;
+                }
+                
+                try {
+                    $stmt = $db->prepare('INSERT INTO recipients (name, email) VALUES (?, ?)');
+                    $stmt->execute([$name, $email]);
+                    echo json_encode(['success' => true, 'message' => 'Recipient added']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'error' => 'Email already exists']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => 'POST required']);
+            }
+            break;
+            
+        case 'update_recipient':
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $id = $_POST['id'] ?? 0;
+                $name = $_POST['name'] ?? '';
+                $email = $_POST['email'] ?? '';
+                
+                if (empty($name) || empty($email)) {
+                    echo json_encode(['success' => false, 'error' => 'Name and email required']);
+                    break;
+                }
+                
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    echo json_encode(['success' => false, 'error' => 'Invalid email address']);
+                    break;
+                }
+                
+                try {
+                    $stmt = $db->prepare('UPDATE recipients SET name = ?, email = ?, updated_at = datetime("now") WHERE id = ?');
+                    $stmt->execute([$name, $email, $id]);
+                    echo json_encode(['success' => true, 'message' => 'Recipient updated']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'error' => 'Email already exists']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => 'POST required']);
+            }
+            break;
+            
+        case 'delete_recipient':
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $id = $_POST['id'] ?? 0;
+                $stmt = $db->prepare('UPDATE recipients SET is_active = 0 WHERE id = ?');
+                $stmt->execute([$id]);
+                echo json_encode(['success' => true, 'message' => 'Recipient deleted']);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'POST required']);
+            }
             break;
             
         case 'send_selected':

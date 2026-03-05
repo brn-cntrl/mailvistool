@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupEventListeners() {
     document.getElementById('syncBtn').addEventListener('click', syncEmails);
     document.getElementById('sendSelectedBtn').addEventListener('click', sendSelectedEmails);
-    
+    document.getElementById('manageRecipientsBtn').addEventListener('click', openRecipientsModal);
     document.getElementById('selectAll').addEventListener('change', function() {
         const checkboxes = document.querySelectorAll('.email-checkbox');
         checkboxes.forEach(cb => {
@@ -431,4 +431,139 @@ function formatDate(dateString) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+function openRecipientsModal() {
+    document.getElementById('recipientsModal').style.display = 'block';
+    loadRecipientsTable();
+    
+    setTimeout(function() {
+        const addBtn = document.getElementById('addRecipientBtn');
+        if (addBtn) {
+            addBtn.onclick = function() {
+                openRecipientForm(null, '', '');
+            };
+        }
+    }, 100);
+}
+
+function closeRecipientsModal() {
+    document.getElementById('recipientsModal').style.display = 'none';
+}
+
+async function loadRecipientsTable() {
+    const tbody = document.getElementById('recipientsTableBody');
+    tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading...</td></tr>';
+    
+    try {
+        const response = await fetch('api.php?action=get_recipients');
+        const result = await response.json();
+        
+        if (result.success) {
+            const recipients = result.data;
+            
+            if (recipients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="loading">No recipients configured</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = recipients.map(r => `
+                <tr>
+                    <td>${escapeHtml(r.name)}</td>
+                    <td>${escapeHtml(r.email)}</td>
+                    <td>
+                        <button class="btn btn-small" onclick="editRecipient(${r.id}, '${escapeHtml(r.name)}', '${escapeHtml(r.email)}')" style="background: #3182ce; color: white; margin-right: 5px;">Edit</button>
+                        <button class="btn btn-small" onclick="deleteRecipient(${r.id}, '${escapeHtml(r.name)}')" style="background: #e53e3e; color: white;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading recipients:', error);
+        tbody.innerHTML = '<tr><td colspan="3" class="loading">Error loading recipients</td></tr>';
+    }
+}
+
+function openRecipientForm(id = null, name = '', email = '') {
+    document.getElementById('recipientFormModal').style.display = 'block';
+    document.getElementById('recipientFormTitle').textContent = id ? 'Edit Recipient' : 'Add Recipient';
+    document.getElementById('recipientId').value = id ? id : '';
+    document.getElementById('recipientName').value = name || '';
+    document.getElementById('recipientEmail').value = email || '';
+}
+
+function closeRecipientForm() {
+    document.getElementById('recipientFormModal').style.display = 'none';
+    document.getElementById('recipientForm').reset();
+}
+
+function editRecipient(id, name, email) {
+    openRecipientForm(id, name, email);
+}
+
+async function saveRecipient(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('recipientId').value;
+    const name = document.getElementById('recipientName').value;
+    const email = document.getElementById('recipientEmail').value;
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    
+    if (id) {
+        formData.append('id', id);
+    }
+    
+    const action = id ? 'update_recipient' : 'add_recipient';
+    
+    try {
+        const response = await fetch(`api.php?action=${action}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            closeRecipientForm();
+            loadRecipientsTable();
+            await loadRecipients();
+            await loadEmails(currentFilter);
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error saving recipient:', error);
+        alert('Error saving recipient');
+    }
+}
+
+async function deleteRecipient(id, name) {
+    if (!confirm(`Delete recipient "${name}"?`)) return;
+    
+    const formData = new FormData();
+    formData.append('id', id);
+    
+    try {
+        const response = await fetch('api.php?action=delete_recipient', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            loadRecipientsTable();
+            await loadRecipients();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error deleting recipient:', error);
+        alert('Error deleting recipient');
+    }
 }
