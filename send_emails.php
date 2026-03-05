@@ -72,29 +72,30 @@ class EmailForwarder {
                 $this->config['smtp']['from_name']
             );
             
-            // To - use assigned_recipient or fallback to intended_recipient
+            $mail->addReplyTo(
+                $emailData['sender_email'],
+                $emailData['sender_name'] ?? $emailData['sender_email']
+            );
+            
             $recipient = $emailData['assigned_recipient'] ?? $emailData['intended_recipient'];
             if (!$recipient) {
                 throw new Exception("No recipient assigned for email ID {$emailData['id']}");
             }
             $mail->addAddress($recipient);
             
-            // Subject
             $mail->Subject = 'Fwd: ' . $emailData['subject'];
             
-            // Get full body from IMAP
             $fullBody = $emailData['body_preview'];
             
             // Body
             $forwardedMessage = "---------- Forwarded message ---------\n";
+            $forwardedMessage .= "IMPORTANT: When replying, please reply directly to the sender below.\n\n";
             $forwardedMessage .= "From: {$emailData['sender_name']} <{$emailData['sender_email']}>\n";
             $forwardedMessage .= "Date: {$emailData['date_received']}\n";
             $forwardedMessage .= "Subject: {$emailData['subject']}\n\n";
             $forwardedMessage .= $fullBody ?? $emailData['body_preview'];
             
             $mail->Body = $forwardedMessage;
-            
-            // Send
             $mail->send();
             
             return true;
@@ -117,7 +118,7 @@ class EmailForwarder {
         
         $emails = $stmt->fetchAll();
 
-        // DEBUG: Log what we found
+        // DEBUG
         error_log("Found " . count($emails) . " selected emails to send");
         foreach ($emails as $email) {
             error_log("Email ID {$email['id']}: {$email['subject']} -> {$email['assigned_recipient']}");

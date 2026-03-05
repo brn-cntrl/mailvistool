@@ -22,13 +22,13 @@ try {
             $sql = 'SELECT * FROM emails WHERE 1=1';
             $params = [];
             
-            if ($filter === 'unread') {
-                $sql .= ' AND is_read = 0';
+            if ($filter === 'inbox') {
+                $sql .= ' AND is_sent = 0';
             } elseif ($filter === 'urgent') {
-                $sql .= ' AND priority = ?';
+                $sql .= ' AND priority = ? AND is_sent = 0';
                 $params[] = 'high';
-            } elseif ($filter === 'actioned') {
-                $sql .= ' AND is_actioned = 1';
+            } elseif ($filter === 'sent') {
+                $sql .= ' AND is_sent = 1';
             }
             
             $sql .= ' ORDER BY date_received DESC';
@@ -73,10 +73,10 @@ try {
             $stats['unread'] = $db->query('SELECT COUNT(*) FROM emails WHERE is_read = 0')->fetchColumn();
             
             // Urgent
-            $stats['urgent'] = $db->query('SELECT COUNT(*) FROM emails WHERE priority = "high" AND is_actioned = 0')->fetchColumn();
+            $stats['urgent'] = $db->query('SELECT COUNT(*) FROM emails WHERE priority = "high" AND is_sent = 0')->fetchColumn();
             
-            // Actioned
-            $stats['actioned'] = $db->query('SELECT COUNT(*) FROM emails WHERE is_actioned = 1')->fetchColumn();
+            // Sent
+            $stats['sent'] = $db->query('SELECT COUNT(*) FROM emails WHERE is_sent = 1')->fetchColumn();
             
             echo json_encode(['success' => true, 'data' => $stats]);
             break;
@@ -126,26 +126,6 @@ try {
                 // This will call the sync script
                 require_once 'sync.php';
                 echo json_encode(['success' => true, 'message' => 'Sync completed']);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'POST required']);
-            }
-            break;
-            
-        case 'mark_actioned':
-            // Mark email as actioned
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $id = $_POST['id'] ?? 0;
-                $note = $_POST['note'] ?? '';
-                
-                // Update email
-                $stmt = $db->prepare('UPDATE emails SET is_actioned = 1, actioned_at = datetime("now") WHERE id = ?');
-                $stmt->execute([$id]);
-                
-                // Log action
-                $stmt = $db->prepare('INSERT INTO actions (email_id, action_type, note) VALUES (?, ?, ?)');
-                $stmt->execute([$id, 'resolved', $note]);
-                
-                echo json_encode(['success' => true, 'message' => 'Email marked as actioned']);
             } else {
                 echo json_encode(['success' => false, 'error' => 'POST required']);
             }

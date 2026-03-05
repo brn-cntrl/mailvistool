@@ -1,10 +1,5 @@
 <?php
-/**
- * View emails that were sent/forwarded from the dashboard
- */
-
 require_once 'db.php';
-
 $db = Database::getInstance()->getConnection();
 
 echo "=== Sent Emails from Dashboard ===\n\n";
@@ -17,10 +12,9 @@ $stmt = $db->query('
         e.sender_email,
         e.assigned_recipient,
         e.body_preview,
-        e.sent_at,
-        a.note
+        e.date_received,
+        e.sent_at
     FROM emails e
-    LEFT JOIN actions a ON e.id = a.email_id AND a.action_type = "forwarded"
     WHERE e.is_sent = 1
     ORDER BY e.sent_at DESC
 ');
@@ -39,14 +33,18 @@ foreach ($sentEmails as $email) {
     echo "EMAIL ID: {$email['id']}\n";
     echo "Sent At: {$email['sent_at']}\n";
     echo "Forwarded To: {$email['assigned_recipient']}\n";
-    echo str_repeat("-", 70) . "\n";
-    echo "Original From: {$email['sender_name']} <{$email['sender_email']}>\n";
     echo "Subject: Fwd: {$email['subject']}\n";
-    echo "\nBody that was sent:\n";
-    echo "---------- Forwarded message ---------\n";
-    echo "From: {$email['sender_name']} <{$email['sender_email']}>\n";
-    echo "Subject: {$email['subject']}\n\n";
-    echo $email['body_preview'] . "\n";
+    echo str_repeat("-", 70) . "\n";
+    echo "\nEXACT BODY THAT WAS SENT:\n\n";
+    
+    $forwardedMessage = "---------- Forwarded message ---------\n";
+    $forwardedMessage .= "IMPORTANT: When replying, please reply directly to the sender below.\n\n";
+    $forwardedMessage .= "From: {$email['sender_name']} <{$email['sender_email']}>\n";
+    $forwardedMessage .= "Date: {$email['date_received']}\n";
+    $forwardedMessage .= "Subject: {$email['subject']}\n\n";
+    $forwardedMessage .= $email['body_preview'];
+    
+    echo $forwardedMessage . "\n";
     echo str_repeat("=", 70) . "\n\n";
 }
 

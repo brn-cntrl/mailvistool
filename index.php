@@ -26,8 +26,8 @@
                 <div class="stat-value" id="stat-urgent">-</div>
             </div>
             <div class="stat-card success">
-                <div class="stat-label">Resolved</div>
-                <div class="stat-value" id="stat-actioned">-</div>
+                <div class="stat-label">Sent</div>
+                <div class="stat-value" id="stat-sent">-</div>
             </div>
         </div>
 
@@ -50,10 +50,9 @@
         </div>
 
         <div class="filters">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="unread">Unread</button>
-            <button class="filter-btn" data-filter="urgent">Urgent</button>
-            <button class="filter-btn" data-filter="actioned">Resolved</button>
+            <button class="filter-btn active" data-filter="inbox">📥 Inbox</button>
+            <button class="filter-btn" data-filter="urgent">⭐ Urgent</button>
+            <button class="filter-btn" data-filter="sent">📤 Sent</button>
         </div>
 
         <!-- Email Table -->

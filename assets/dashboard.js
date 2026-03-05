@@ -1,4 +1,4 @@
-let currentFilter = 'all';
+let currentFilter = 'inbox';
 let recipientChart = null;
 let timeChart = null;
 let availableRecipients = [];
@@ -52,7 +52,7 @@ async function loadStats() {
             document.getElementById('stat-total').textContent = stats.total;
             document.getElementById('stat-unread').textContent = stats.unread;
             document.getElementById('stat-urgent').textContent = stats.urgent;
-            document.getElementById('stat-actioned').textContent = stats.actioned;
+            document.getElementById('stat-sent').textContent = stats.sent;
         }
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -106,7 +106,7 @@ async function loadEmails(filter = 'all') {
                     </td>
                     <td onclick="showEmailDetail(${email.id})">${formatDate(email.date_received)}</td>
                     <td onclick="event.stopPropagation();">
-                        ${!isSent && !email.is_actioned ? `<button class="btn btn-small btn-success" onclick="markActioned(${email.id})">Resolve</button>` : (isSent ? '📤' : '✓')}
+                        ${isSent ? '📤' : ''}
                     </td>
                 </tr>
             `}).join('');
@@ -230,9 +230,7 @@ async function showEmailDetail(emailId) {
                     <div class="email-body">${escapeHtml(email.body_preview || 'No preview available')}</div>
                 </div>
                 
-                ${!email.is_actioned ? `
-                    <button class="btn btn-success" onclick="markActioned(${email.id}); closeModal();">Mark as Resolved</button>
-                ` : '<p style="color: #38a169; font-weight: 600;">✓ Resolved</p>'}
+                ${email.is_sent ? '<p style="color: #2c5aa0; font-weight: 600;">📤 Sent on ' + formatDate(email.sent_at) + '</p>' : ''}
             `;
         }
     } catch (error) {
@@ -284,33 +282,33 @@ async function syncEmails() {
     }
 }
 
-async function markActioned(emailId) {
-    if (!confirm('Mark this email as resolved?')) return;
+// async function markActioned(emailId) {
+//     if (!confirm('Mark this email as resolved?')) return;
     
-    try {
-        const formData = new FormData();
-        formData.append('id', emailId);
-        formData.append('note', 'Marked as resolved from dashboard');
+//     try {
+//         const formData = new FormData();
+//         formData.append('id', emailId);
+//         formData.append('note', 'Marked as resolved from dashboard');
         
-        const response = await fetch('api.php?action=mark_actioned', {
-            method: 'POST',
-            body: formData
-        });
+//         const response = await fetch('api.php?action=mark_actioned', {
+//             method: 'POST',
+//             body: formData
+//         });
         
-        const result = await response.json();
+//         const result = await response.json();
         
-        if (result.success) {
-            await loadStats();
-            await loadEmails(currentFilter);
-            await loadCharts();
-        } else {
-            alert('Error: ' + result.error);
-        }
-    } catch (error) {
-        console.error('Error marking email:', error);
-        alert('Error marking email as actioned');
-    }
-}
+//         if (result.success) {
+//             await loadStats();
+//             await loadEmails(currentFilter);
+//             await loadCharts();
+//         } else {
+//             alert('Error: ' + result.error);
+//         }
+//     } catch (error) {
+//         console.error('Error marking email:', error);
+//         alert('Error marking email as actioned');
+//     }
+// }
 
 async function loadRecipients() {
     try {
