@@ -9,7 +9,7 @@ A PHP-based email queue dashboard for managing, routing, and forwarding inbound 
 - **Keyword Routing** — Automatically suggests a recipient based on configurable subject-line keyword rules (e.g. "project proposal" → David, "urgent" → Admin)
 - **Manual Assignment** — Override auto-routing from the dashboard via a per-row dropdown
 - **Email Forwarding** — Select one or more emails and forward them via SMTP; original message is wrapped in a standard forward block
-- **Stats Overview** — At-a-glance counts for total, unread, urgent (unactioned high-priority), and resolved emails
+- **Stats Overview** — At-a-glance counts for total, unread, urgent (unsent high-priority), and sent emails
 - **Charts** — Bar chart of emails by intended recipient; line chart of email volume over the last 7 days (Chart.js)
 - **Action Tracking** — Mark emails as resolved; all actions (forwarded, resolved) are logged to an `actions` table
 - **Auto Database Setup** — `db.php` bootstraps the SQLite schema automatically on first run
@@ -133,15 +133,13 @@ Edit [config.php](config.php) to point at your IMAP and SMTP server:
     'from_email' => 'dashboard@example.com',
     'from_name'  => 'Email Dashboard',
 ],
-'recipients' => [
-    ['email' => 'alice@example.com', 'name' => 'Alice'],
-    ['email' => 'bob@example.com',   'name' => 'Bob'],
-],
 'routing_rules' => [
     'project proposal' => ['email' => 'alice@example.com', 'name' => 'Alice', 'priority' => 10],
     'urgent'           => ['email' => 'bob@example.com',   'name' => 'Bob',   'priority' => 20],
 ],
 ```
+
+Recipients are managed through the dashboard UI (stored in the `recipients` DB table) rather than in `config.php`.
 
 ### 5. Set up the database
 
@@ -218,15 +216,19 @@ php inspect_metadata.php
 | `uid` | INTEGER | IMAP UID |
 | `sender_name` / `sender_email` | TEXT | Parsed from headers |
 | `subject` | TEXT | |
-| `body_preview` | TEXT | First 500 characters of body |
+| `body_preview` | TEXT | First 200 characters of body |
+| `size` | INTEGER | Message size in bytes |
+| `date_received` | DATETIME | Date/time from IMAP |
 | `priority` | TEXT | `high` / `normal` / `low` |
 | `is_read` / `is_answered` / `is_flagged` | INTEGER | IMAP flags |
 | `has_attachments` / `attachment_count` | INTEGER | |
 | `intended_recipient` | TEXT | Auto-matched by routing rule |
+| `matched_rule_id` | INTEGER | FK to `routing_rules.id` |
 | `assigned_recipient` | TEXT | Manually assigned via UI |
 | `is_actioned` / `actioned_at` | INTEGER / DATETIME | Resolved in dashboard |
 | `is_sent` / `sent_at` | INTEGER / DATETIME | Forwarded via SMTP |
 | `is_selected` | INTEGER | Checkbox state in UI |
+| `fetched_at` | DATETIME | When the record was inserted |
 
 ### `routing_rules`
 
@@ -234,7 +236,19 @@ Maps subject keywords to recipient email addresses with a numeric priority (high
 
 ### `actions`
 
-Audit log of every `resolved` or `forwarded` action taken on an email.
+Audit log of every `noted`, `forwarded`, or `resolved` action taken on an email.
+
+### `recipients`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `name` | TEXT | Display name |
+| `email` | TEXT UNIQUE | Email address |
+| `is_active` | INTEGER | Soft-delete flag (1 = active) |
+| `created_at` / `updated_at` | DATETIME | |
+
+Recipients are stored in the database and managed via the dashboard UI rather than in `config.php`.
 
 ## API Reference
 
@@ -242,17 +256,19 @@ All endpoints are served from [api.php](api.php) via query string (`?action=...`
 
 | Action | Method | Description |
 |---|---|---|
-| `emails` | GET | List emails; optional `filter=all\|unread\|urgent\|actioned` |
+| `emails` | GET | List emails; optional `filter=all\|inbox\|urgent\|sent` |
 | `email` | GET | Single email with action history; requires `id` |
-| `stats` | GET | Counts: total, unread, urgent, actioned |
+| `stats` | GET | Counts: total, unread, urgent, sent |
 | `chart_by_recipient` | GET | Email counts grouped by recipient |
 | `chart_by_date` | GET | Email counts for last 7 days |
 | `rules` | GET | List all routing rules |
 | `sync` | POST | Trigger IMAP sync |
-| `mark_actioned` | POST | Mark email resolved; params: `id`, `note` |
 | `assign_recipient` | POST | Override routing; params: `id`, `recipient` |
 | `toggle_select` | POST | Set checkbox state; params: `id`, `selected` |
-| `get_recipients` | GET | Available recipients from config |
+| `get_recipients` | GET | Active recipients from the `recipients` table |
+| `add_recipient` | POST | Add a recipient; params: `name`, `email` |
+| `update_recipient` | POST | Update a recipient; params: `id`, `name`, `email` |
+| `delete_recipient` | POST | Soft-delete a recipient; params: `id` |
 | `send_selected` | POST | Forward all selected emails via SMTP |
 
 ## Utility Scripts
