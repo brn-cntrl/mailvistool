@@ -1,4 +1,4 @@
-# MailSorter
+# MailOps
 
 A PHP-based email queue dashboard for managing, routing, and forwarding inbound emails. It connects to an IMAP server, stores emails in a local SQLite database, automatically routes them to team members based on subject keywords, and lets you forward them via SMTP from a browser UI.
 
@@ -28,7 +28,7 @@ A PHP-based email queue dashboard for managing, routing, and forwarding inbound 
 ## Project Structure
 
 ```
-MailSorter/
+MailVisTool/
 ├── index.php               # Dashboard HTML page
 ├── api.php                 # REST API consumed by the frontend
 ├── sync.php                # EmailSync class — fetches from IMAP, writes to DB
