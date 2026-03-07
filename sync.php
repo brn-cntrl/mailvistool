@@ -74,6 +74,13 @@ class EmailSync {
     private function extractPriority($message) {
         $rawHeaders = $message->getHeader()->raw;
         
+        // Use library attributes if possible
+        if (isset($message->priority)) {
+            $p = (int)$message->priority;
+            if ($p === 1) return 'high';
+            if ($p >= 4) return 'low';
+        }
+
         // Check X-Priority header
         if (preg_match('/X-Priority:\s*(\d+)/i', $rawHeaders, $matches)) {
             $priority = intval($matches[1]);
@@ -95,29 +102,30 @@ class EmailSync {
      * Parse sender information from raw headers
      */
     private function parseSender($message) {
-        $rawHeaders = $message->getHeader()->raw;
-        
-        if (preg_match('/From:\s*(.+?)(?:\r?\n(?!\s)|$)/s', $rawHeaders, $matches)) {
-            $fromRaw = trim($matches[1]);
-            
-            // Try to extract name and email
-            if (preg_match('/(.+?)\s*<(.+?)>/', $fromRaw, $parts)) {
+        try {
+            $from = $message->getFrom()->first();
+            if ($from) {
                 return [
-                    'name' => trim($parts[1]),
-                    'email' => trim($parts[2])
-                ];
-            } else {
-                // Just email, no name
-                return [
-                    'name' => null,
-                    'email' => trim($fromRaw)
+                    'name' => $from->personal,
+                    'email' => $from->mail
                 ];
             }
+        } catch (Exception $e) {
+            error_log("Error parsing sender with library: " . $e->getMessage());
         }
-        
+
+        // Fallback to basic parsing if library fails
+        $fromRaw = (string)$message->from;
+        if (preg_match('/(.+?)\s*<(.+?)>/', $fromRaw, $parts)) {
+            return [
+                'name' => trim($parts[1], '"\' '),
+                'email' => trim($parts[2])
+            ];
+        }
+
         return [
             'name' => null,
-            'email' => null
+            'email' => trim($fromRaw, '"\' ')
         ];
     }
     
@@ -181,6 +189,10 @@ class EmailSync {
         ];
         
         try {
+            // Increase limits for large inboxes
+            set_time_limit(300);
+            ini_set('memory_limit', '512M');
+
             // Connect to IMAP
             $this->connectIMAP();
             if ($this->verbose) echo "✓ Connected to IMAP server\n";
@@ -189,8 +201,9 @@ class EmailSync {
             $folder = $this->imapClient->getFolder('INBOX');
             if ($this->verbose) echo "✓ Opened INBOX\n";
             
-            // Fetch all messages
-            $messages = $folder->query()->all()->get();
+            // Fetch recent messages (limiting to avoid hang on large inboxes)
+            if ($this->verbose) echo "  - Fetching recent messages (limit 50)...\n";
+            $messages = $folder->query()->all()->limit(50)->get();
             $stats['total_fetched'] = $messages->count();
             if ($this->verbose) echo "✓ Found {$stats['total_fetched']} emails\n\n";
             
