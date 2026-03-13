@@ -34,7 +34,9 @@ MailVisTool/
 ├── sync.php                # EmailSync class — fetches from IMAP, writes to DB
 ├── send_emails.php         # EmailForwarder class — forwards via SMTP
 ├── db.php                  # Database singleton (auto-creates schema on first use)
-├── config.php              # IMAP / SMTP / recipients / routing config
+├── config.php              # Loads env vars; sets IMAP / SMTP / routing config
+├── .env                    # Your local credentials (not committed)
+├── .env.example            # Template — copy to .env and fill in values
 ├── schema.sql              # SQLite schema (emails, routing_rules, actions)
 ├── setup_database.php      # One-time DB setup script (optional, db.php handles it)
 ├── migrate_add_forwarding.php  # Migration: adds forwarding columns to emails table
@@ -113,33 +115,34 @@ composer install
 
 ### 4. Configure
 
-Edit [config.php](config.php) to point at your IMAP and SMTP server:
+Copy the example environment file and fill in your IMAP and SMTP credentials:
 
-```php
-'imap' => [
-    'host'          => 'mail.example.com',
-    'port'          => 993,
-    'username'      => 'inbox@example.com',
-    'password'      => 'your-password',
-    'encryption'    => 'ssl',
-    'validate_cert' => true,
-],
-'smtp' => [
-    'host'       => 'smtp.example.com',
-    'port'       => 587,
-    'username'   => 'sender@example.com',
-    'password'   => 'your-password',
-    'encryption' => 'tls',
-    'from_email' => 'dashboard@example.com',
-    'from_name'  => 'Email Dashboard',
-],
-'routing_rules' => [
-    'project proposal' => ['email' => 'alice@example.com', 'name' => 'Alice', 'priority' => 10],
-    'urgent'           => ['email' => 'bob@example.com',   'name' => 'Bob',   'priority' => 20],
-],
+```bash
+cp .env.example .env
 ```
 
-Recipients are managed through the dashboard UI (stored in the `recipients` DB table) rather than in `config.php`.
+Then open `.env` and set your values:
+
+```env
+IMAP_HOST=mail.example.com
+IMAP_PORT=993
+IMAP_USERNAME=inbox@example.com
+IMAP_PASSWORD=your-password
+IMAP_ENCRYPTION=ssl
+IMAP_VALIDATE_CERT=true
+
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USERNAME=sender@example.com
+SMTP_PASSWORD=your-password
+SMTP_ENCRYPTION=ssl
+SMTP_FROM_EMAIL=dashboard@example.com
+SMTP_FROM_NAME=Email Dashboard
+```
+
+Credentials are loaded at runtime via [vlucas/phpdotenv](https://github.com/vlucas/phpdotenv) — the `.env` file is read by [config.php](config.php) and should never be committed to version control.
+
+Routing rules can be added directly in [config.php](config.php) under the `routing_rules` key. Recipients are managed through the dashboard UI (stored in the `recipients` DB table) rather than in `config.php`.
 
 ### 5. Set up the database
 
@@ -189,7 +192,21 @@ java -jar greenmail-standalone.jar \
   --greenmail.users=test1:test1@localhost
 ```
 
-The default `config.php` is already configured for these ports and credentials.
+To use GreenMail, set the following in your `.env`:
+
+```env
+IMAP_HOST=localhost
+IMAP_PORT=3143
+IMAP_USERNAME=test1@localhost
+IMAP_PASSWORD=test1
+IMAP_ENCRYPTION=
+
+SMTP_HOST=localhost
+SMTP_PORT=3025
+SMTP_USERNAME=test1@localhost
+SMTP_PASSWORD=test1
+SMTP_ENCRYPTION=
+```
 
 ### Verify the connection
 
