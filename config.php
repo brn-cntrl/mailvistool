@@ -4,24 +4,27 @@
  * Edit this file to customize settings
  */
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
 return [
     // IMAP Connection Settings
     'imap' => [
-        'host' => 'localhost',
-        'port' => 3143,
-        'username' => 'test1@localhost',
-        'password' => 'test1',
-        'encryption' => false,
-        'validate_cert' => false,
+        'host' => $_ENV['IMAP_HOST'],
+        'port' => $_ENV['IMAP_PORT'],
+        'username' => $_ENV['IMAP_USERNAME'],
+        'password' => $_ENV['IMAP_PASSWORD'],
+        'encryption' => $_ENV['IMAP_ENCRYPTION'],
+        'validate_cert' => $_ENV['IMAP_VALIDATE_CERT'] === 'true'
     ],
     'smtp' => [
-        'host' => 'localhost',
-        'port' => 3025,
-        'username' => '',              // Empty for Greenmail
-        'password' => '',              // Empty for Greenmail
-        'encryption' => '',            // No encryption for Greenmail
-        'from_email' => 'dashboard@test.localhost',
-        'from_name' => 'Email Dashboard'
+        'host' => $_ENV['SMTP_HOST'],
+        'port' => $_ENV['SMTP_PORT'],
+        'username' => $_ENV['SMTP_USERNAME'],
+        'password' => $_ENV['SMTP_PASSWORD'],
+        'encryption' => $_ENV['SMTP_ENCRYPTION'],
+        'from_email' => $_ENV['SMTP_FROM_EMAIL'],
+        'from_name' => $_ENV['SMTP_FROM_NAME']
     ],
 
     // Available recipients for dropdown

@@ -1,4 +1,5 @@
 greenmail-standalone-2.1.8.jar
+.env
 vendor/
 
 # Database folder - keep structure but ignore contents
