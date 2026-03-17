@@ -79,7 +79,7 @@ async function loadEmails(filter = 'all') {
             }
             
             tbody.innerHTML = emails.map(email => {
-                const assignedRecipient = email.assigned_recipient || email.intended_recipient || '';
+                const assignedRecipientIds = email.assigned_recipient_ids || '';
                 const isSent = email.is_sent == 1;
                 
                 return `
@@ -100,9 +100,9 @@ async function loadEmails(filter = 'all') {
                         <small>${escapeHtml(email.sender_email || '')}</small>
                     </td>
                     <td onclick="showEmailDetail(${email.id})">${escapeHtml(email.subject)}</td>
-                    <td id="recipient-cell-${email.id}" onclick="showEmailDetail(${email.id})">${escapeHtml(assignedRecipient || 'Unassigned')}</td>
+                    <td id="recipient-cell-${email.id}" onclick="showEmailDetail(${email.id})">${escapeHtml(email.assigned_recipient_names || 'Unassigned')}</td>
                     <td onclick="event.stopPropagation();">
-                        ${createRecipientDropdown(email.id, assignedRecipient)}
+                        ${createRecipientDropdown(email.id, assignedRecipientIds)}
                     </td>
                     <td onclick="showEmailDetail(${email.id})">${formatDate(email.date_received)}</td>
                     <td onclick="event.stopPropagation();">
@@ -110,7 +110,18 @@ async function loadEmails(filter = 'all') {
                     </td>
                 </tr>
             `}).join('');
-
+            
+            document.querySelectorAll('.recipient-select').forEach(el => {
+                const emailId = el.id.replace('recipient-select-', '');
+                new TomSelect(el, {
+                    plugins: ['remove_button'],
+                    placeholder: 'Assign recipients...',
+                    onchange: function(values) {
+                        assignRecipient(emailId, values);
+                    }
+                });
+            });
+            
             updateSelectedCount();
         }
     } catch (error) {
@@ -244,16 +255,16 @@ function closeModal() {
     document.getElementById('detailModal').style.display = 'none';
 }
 
-// Create recipient dropdown
-function createRecipientDropdown(emailId, currentRecipient) {
-    let options = '<option value="">-- Assign to --</option>';
-    
+function createRecipientDropdown(emailId, assignedRecipientIds) {
+    const selectedIds = assignedRecipientIds ? assignedRecipientIds.split(',') : [];
+
+    let options = '';
     availableRecipients.forEach(recipient => {
-        const selected = recipient.email === currentRecipient ? 'selected' : '';
-        options += `<option value="${recipient.email}" ${selected}>${recipient.name}</option>`;
+        const selected = selectedIds.includes(String(recipient.id)) ? 'selected' : '';
+        options += `<option value="${recipient.id}" ${selected}>${recipient.name} &lt;${recipient.email}&gt;</option>`;
     });
-    
-    return `<select class="recipient-select" onchange="assignRecipient(${emailId}, this.value)">${options}</select>`;
+
+    return `<select id="recipient-select-${emailId}" class="recipient-select" multiple>${options}</select>`;
 }
 
 async function syncEmails() {
@@ -352,11 +363,11 @@ function updateSelectedCount() {
 }
 
 
-async function assignRecipient(emailId, recipient) {
+async function assignRecipient(emailId, recipientIds) {
     try {
         const formData = new FormData();
         formData.append('id', emailId);
-        formData.append('recipient', recipient);
+        recipientIds.forEach(id => formData.append('recipient_ids[]', id));
 
         const response = await fetch('api.php?action=assign_recipient', {
             method: 'POST',
@@ -365,10 +376,7 @@ async function assignRecipient(emailId, recipient) {
 
         const result = await response.json();
 
-        if (result.success) {
-            const cell = document.getElementById(`recipient-cell-${emailId}`);
-            if (cell) cell.textContent = recipient || 'Unassigned';
-        } else {
+        if (!result.success) {
             alert('Error: ' + result.error);
         }
     } catch (error) {

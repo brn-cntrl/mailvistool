@@ -19,7 +19,15 @@ try {
             // Get all emails with optional filters
             $filter = $_GET['filter'] ?? 'all'; // all, unread, urgent, actioned
             
-            $sql = 'SELECT * FROM emails WHERE 1=1';
+            $sql = 'SELECT e.*, 
+                GROUP_CONCAT(r.email) as assigned_recipients,
+                GROUP_CONCAT(r.name) as assigned_recipient_names,
+                GROUP_CONCAT(er.recipient_id) as assigned_recipient_ids
+                FROM emails e
+                LEFT JOIN email_recipients er ON e.id = er.email_id
+                LEFT JOIN recipients r ON er.recipient_id = r.id
+                WHERE 1=1';
+
             $params = [];
             
             if ($filter === 'inbox') {
@@ -31,7 +39,7 @@ try {
                 $sql .= ' AND is_sent = 1';
             }
             
-            $sql .= ' ORDER BY date_received DESC';
+            $sql .= ' GROUP BY e.id ORDER BY e.date_received DESC';
             
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
@@ -132,15 +140,27 @@ try {
             break;
         
         case 'assign_recipient':
-            // Assign recipient to an email
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $_POST['id'] ?? 0;
-                $recipient = $_POST['recipient'] ?? '';
+                $recipientIds = $_POST['recipient_ids'] ?? [];
 
-                $stmt = $db->prepare('UPDATE emails SET assigned_recipient = ? WHERE id = ?');
-                $stmt->execute([$recipient, $id]);
+                if (!is_array($recipientIds)) {
+                    $recipientIds = explode(',', $recipientIds);
+                }
 
-                echo json_encode(['success' => true, 'message' => 'Recipient assigned']);
+                // Clear existing assignments for this email
+                $stmt = $db->prepare('DELETE FROM email_recipients WHERE email_id = ?');
+                $stmt->execute([$id]);
+
+                // Insert new assignments
+                $stmt = $db->prepare('INSERT INTO email_recipients (email_id, recipient_id) VALUES (?, ?)');
+                foreach ($recipientIds as $recipientId) {
+                    if (!empty($recipientId)) {
+                        $stmt->execute([$id, $recipientId]);
+                    }
+                }
+
+                echo json_encode(['success' => true, 'message' => 'Recipients assigned']);
             } else {
                 echo json_encode(['success' => false, 'error' => 'POST required']);
             }

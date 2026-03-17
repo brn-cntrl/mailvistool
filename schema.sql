@@ -83,3 +83,9 @@ CREATE TABLE IF NOT EXISTS recipients (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS email_recipients (
+    email_id INTEGER REFERENCES emails(id),
+    recipient_id INTEGER REFERENCES recipients(id),
+    PRIMARY KEY (email_id, recipient_id)
+);
