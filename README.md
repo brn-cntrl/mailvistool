@@ -249,21 +249,45 @@ php inspect_metadata.php
 
 ### `routing_rules`
 
-Maps subject keywords to recipient email addresses with a numeric priority (higher = checked first).
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `keyword` | TEXT | Subject keyword to match (e.g. "project proposal") |
+| `recipient_email` | TEXT | Destination email address |
+| `recipient_name` | TEXT | Display name of the recipient |
+| `priority` | INTEGER | Higher value = checked first |
+| `created_at` | DATETIME | |
 
 ### `actions`
 
-Audit log of every `noted`, `forwarded`, or `resolved` action taken on an email.
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `email_id` | INTEGER | FK to `emails.id` |
+| `action_type` | TEXT | `noted`, `forwarded`, or `resolved` |
+| `note` | TEXT | Optional note attached to the action |
+| `created_at` | DATETIME | |
 
 ### `recipients`
 
 | Column | Type | Description |
 |---|---|---|
 | `id` | INTEGER PK | |
-| `name` | TEXT | Display name |
-| `email` | TEXT UNIQUE | Email address |
+| `name` | TEXT NOT NULL | Display name |
+| `email` | TEXT UNIQUE NOT NULL | Email address |
 | `is_active` | INTEGER | Soft-delete flag (1 = active) |
 | `created_at` / `updated_at` | DATETIME | |
+
+### `email_recipients`
+
+Junction table linking emails to recipients (many-to-many).
+
+| Column | Type | Description |
+|---|---|---|
+| `email_id` | INTEGER | FK to `emails.id` |
+| `recipient_id` | INTEGER | FK to `recipients.id` |
+
+The combination of `(email_id, recipient_id)` is the primary key.
 
 Recipients are stored in the database and managed via the dashboard UI rather than in `config.php`.
 
