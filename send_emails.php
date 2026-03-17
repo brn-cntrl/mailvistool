@@ -77,11 +77,17 @@ class EmailForwarder {
                 $emailData['sender_name'] ?? $emailData['sender_email']
             );
             
-            $recipient = $emailData['assigned_recipient'] ?? $emailData['intended_recipient'];
-            if (!$recipient) {
-                throw new Exception("No recipient assigned for email ID {$emailData['id']}");
+            $recipients = !empty($emailData['assigned_recipients'])
+                ? explode(',', $emailData['assigned_recipients'])
+                : [];
+
+            if (empty($recipients)) {
+                throw new Exception("No recipients assigned for email ID {$emailData['id']}");
             }
-            $mail->addAddress($recipient);
+
+            foreach ($recipients as $recipient) {
+                $mail->addAddress(trim($recipient));
+            }
             
             $mail->Subject = 'Fwd: ' . $emailData['subject'];
             
@@ -112,8 +118,13 @@ class EmailForwarder {
      */
     public function sendSelectedEmails() {
         $stmt = $this->db->query('
-            SELECT * FROM emails 
-            WHERE is_selected = 1
+            SELECT e.*, 
+                GROUP_CONCAT(r.email) as assigned_recipients
+            FROM emails e
+            LEFT JOIN email_recipients er ON e.id = er.email_id
+            LEFT JOIN recipients r ON er.recipient_id = r.id
+            WHERE e.is_selected = 1
+            GROUP BY e.id
         ');
         
         $emails = $stmt->fetchAll();
