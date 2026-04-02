@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS emails (
     
     -- Email content (from IMAP)
     subject TEXT,
-    body_preview TEXT,                -- First 200 chars
+    body_preview TEXT,                -- First 500 chars
     size INTEGER,                     -- Bytes
     
     -- Date/time (from IMAP)
@@ -33,11 +33,10 @@ CREATE TABLE IF NOT EXISTS emails (
     matched_rule_id INTEGER,
     
     -- Action tracking (your app only)
-    is_actioned INTEGER DEFAULT 0,    -- Did admin handle it?
-    actioned_at DATETIME,
+    -- is_actioned INTEGER DEFAULT 0,    -- Did admin handle it?
+    -- actioned_at DATETIME,
     
     -- Email forwarding (NEW FIELDS)
-    assigned_recipient TEXT,          -- Manually assigned recipient (overrides routing rules)
     is_sent INTEGER DEFAULT 0,        -- Has this email been forwarded?
     sent_at DATETIME,                 -- When was it sent?
     is_selected INTEGER DEFAULT 0,    -- Is checkbox checked in UI?
@@ -72,7 +71,7 @@ CREATE TABLE IF NOT EXISTS actions (
 CREATE INDEX IF NOT EXISTS idx_emails_date ON emails(date_received);
 CREATE INDEX IF NOT EXISTS idx_emails_recipient ON emails(intended_recipient);
 CREATE INDEX IF NOT EXISTS idx_emails_read ON emails(is_read);
-CREATE INDEX IF NOT EXISTS idx_emails_actioned ON emails(is_actioned);
+-- CREATE INDEX IF NOT EXISTS idx_emails_actioned ON emails(is_actioned);
 
 -- Recipients table for managing assignable email addresses
 CREATE TABLE IF NOT EXISTS recipients (

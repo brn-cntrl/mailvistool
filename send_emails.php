@@ -13,7 +13,7 @@ use Webklex\PHPIMAP\ClientManager;
 class EmailForwarder {
     private $db;
     private $config;
-    private $imapClient;
+    // private $imapClient;
     
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
@@ -142,7 +142,7 @@ class EmailForwarder {
         // DEBUG
         error_log("Found " . count($emails) . " selected emails to send");
         foreach ($emails as $email) {
-            error_log("Email ID {$email['id']}: {$email['subject']} -> {$email['assigned_recipient']}");
+            error_log("Email ID {$email['id']}: {$email['subject']} -> {$email['assigned_recipients']}");
         }
 
         $results = [
@@ -170,7 +170,7 @@ class EmailForwarder {
                     INSERT INTO actions (email_id, action_type, note) 
                     VALUES (?, ?, ?)
                 ');
-                $recipient = $email['assigned_recipient'] ?? $email['intended_recipient'];
+                $recipient = $email['assigned_recipients'] ?? $email['intended_recipient'];
                 $logStmt->execute([
                     $email['id'],
                     'forwarded',
