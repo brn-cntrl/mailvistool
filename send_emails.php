@@ -23,19 +23,21 @@ class EmailForwarder {
     /**
      * Get full email body from IMAP
      */
-    private function getFullEmailBody($messageId, $uid) {
-        // Connect to IMAP
-        $cm = new ClientManager();
-        $this->imapClient = $cm->make($this->config['imap']);
-        $this->imapClient->connect();
-        
-        $folder = $this->imapClient->getFolder('INBOX');
-        $messages = $folder->query()->all()->get();
-        
-        foreach ($messages as $message) {
-            if ($message->getMessageId() === $messageId) {
-                return $message->getTextBody();
+    private function getFullEmailBody($uid) {
+        try {
+            $cm = new ClientManager();
+            $client = $cm->make($this->config['imap']);
+            $client->connect();
+            
+            $folder = $client->getFolder('INBOX');
+            // Query specifically by UID for speed
+            $message = $folder->query()->uid($uid)->get()->first();
+            
+            if ($message) {
+                return $message->getTextBody() ?: $message->getHTMLBody(true);
             }
+        } catch (Exception $e) {
+            error_log("Error fetching full body for UID $uid: " . $e->getMessage());
         }
         
         return null;
@@ -72,9 +74,13 @@ class EmailForwarder {
                 $this->config['smtp']['from_name']
             );
             
+            // Clean up sender email (ensure no newlines or junk)
+            $senderEmail = trim(str_replace(["\r", "\n"], '', $emailData['sender_email']));
+            $senderName = trim(str_replace(["\r", "\n"], '', $emailData['sender_name'] ?? ''));
+
             $mail->addReplyTo(
-                $emailData['sender_email'],
-                $emailData['sender_name'] ?? $emailData['sender_email']
+                $senderEmail,
+                $senderName ?: $senderEmail
             );
             
             $recipients = !empty($emailData['assigned_recipients'])
@@ -91,7 +97,11 @@ class EmailForwarder {
             
             $mail->Subject = 'Fwd: ' . $emailData['subject'];
             
-            $fullBody = $emailData['body_preview'];
+            // Try to get full body, fallback to preview
+            $fullBody = $this->getFullEmailBody($emailData['uid']);
+            if (!$fullBody) {
+                $fullBody = $emailData['body_preview'];
+            }
             
             // Body
             $forwardedMessage = "---------- Forwarded message ---------\n";

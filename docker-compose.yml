@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  mailops:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      # ensure the database directory is writable
+      - ./database:/var/www/html/database
+      # preserve vendor directory from the image
+      - /var/www/html/vendor
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html
