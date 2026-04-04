@@ -127,6 +127,8 @@ class EmailForwarder {
      * Send all selected emails
      */
     public function sendSelectedEmails() {
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
         $stmt = $this->db->query('
             SELECT e.*, 
                 GROUP_CONCAT(r.email) as assigned_recipients

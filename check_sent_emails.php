@@ -10,12 +10,15 @@ $stmt = $db->query('
         e.subject,
         e.sender_name,
         e.sender_email,
-        e.assigned_recipient,
         e.body_preview,
         e.date_received,
-        e.sent_at
+        e.sent_at,
+        GROUP_CONCAT(r.email) as assigned_recipients
     FROM emails e
+    LEFT JOIN email_recipients er ON e.id = er.email_id
+    LEFT JOIN recipients r ON er.recipient_id = r.id
     WHERE e.is_sent = 1
+    GROUP BY e.id
     ORDER BY e.sent_at DESC
 ');
 
@@ -32,7 +35,7 @@ foreach ($sentEmails as $email) {
     echo str_repeat("=", 70) . "\n";
     echo "EMAIL ID: {$email['id']}\n";
     echo "Sent At: {$email['sent_at']}\n";
-    echo "Forwarded To: {$email['assigned_recipient']}\n";
+    echo "Forwarded To: {$email['assigned_recipients']}\n";
     echo "Subject: Fwd: {$email['subject']}\n";
     echo str_repeat("-", 70) . "\n";
     echo "\nEXACT BODY THAT WAS SENT:\n\n";

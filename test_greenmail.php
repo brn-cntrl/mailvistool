@@ -17,12 +17,12 @@ fwrite($smtp, "HELO localhost\r\n");
 fgets($smtp);
 fwrite($smtp, "MAIL FROM: <sender@example.com>\r\n");
 fgets($smtp);
-fwrite($smtp, "RCPT TO: <test@localhost>\r\n");
+fwrite($smtp, "RCPT TO: <test1@localhost>\r\n");
 fgets($smtp);
 fwrite($smtp, "DATA\r\n");
 fgets($smtp);
 fwrite($smtp, "From: sender@example.com\r\n");
-fwrite($smtp, "To: test@localhost\r\n");
+fwrite($smtp, "To: test1@localhost\r\n");
 fwrite($smtp, "Subject: Test Email from PHP\r\n");
 fwrite($smtp, "Date: " . date('r') . "\r\n");
 fwrite($smtp, "\r\n");
@@ -45,8 +45,8 @@ $client = $cm->make([
     'port'          => 3143,
     'encryption'    => false,
     'validate_cert' => false,
-    'username'      => 'test@localhost',
-    'password'      => 'password',
+    'username'      => 'test1@localhost',
+    'password'      => 'test1',
     'protocol'      => 'imap'
 ]);
 

@@ -116,7 +116,7 @@ async function loadEmails(filter = 'all') {
                 new TomSelect(el, {
                     plugins: ['remove_button'],
                     placeholder: 'Assign recipients...',
-                    onchange: function(values) {
+                    onChange: function(values) {
                         assignRecipient(emailId, values);
                     }
                 });
