@@ -159,7 +159,10 @@ try {
                         $stmt->execute([$id, $recipientId]);
                     }
                 }
-
+                // $check = $db->prepare('SELECT * FROM email_recipients WHERE email_id = ?');
+                // $check->execute([$id]);
+                // $saved = $check->fetchAll();
+                // error_log("Saved assignments for email $id: " . json_encode($saved));
                 echo json_encode(['success' => true, 'message' => 'Recipients assigned']);
             } else {
                 echo json_encode(['success' => false, 'error' => 'POST required']);

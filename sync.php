@@ -203,7 +203,8 @@ class EmailSync {
             
             // Fetch recent messages (limiting to avoid hang on large inboxes)
             if ($this->verbose) echo "  - Fetching recent messages (limit 50)...\n";
-            $messages = $folder->query()->all()->limit(50)->get();
+            // $messages = $folder->query()->all()->limit(50)->get();
+            $messages = $folder->query()->all()->limit(50)->setFetchOrder('desc')->get();
             $stats['total_fetched'] = $messages->count();
             if ($this->verbose) echo "✓ Found {$stats['total_fetched']} emails\n\n";
             

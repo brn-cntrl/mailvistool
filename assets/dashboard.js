@@ -6,7 +6,7 @@ let availableRecipients = [];
 document.addEventListener('DOMContentLoaded', function() {
     loadRecipients();
     loadStats();
-    loadEmails();
+    loadEmails('inbox');
     loadCharts();
     setupEventListeners();
 });
@@ -59,7 +59,7 @@ async function loadStats() {
     }
 }
 
-async function loadEmails(filter = 'all') {
+async function loadEmails(filter = 'inbox') {
     if (availableRecipients.length === 0) {
         await loadRecipients();
     }
