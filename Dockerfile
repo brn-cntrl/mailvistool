@@ -5,13 +5,14 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     libc-client-dev \
     libkrb5-dev \
+    libzip-dev \
     unzip \
     git \
     && rm -r /var/lib/apt/lists/*
 
 # Configure and install PHP extensions
 RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
-    && docker-php-ext-install imap pdo_sqlite
+    && docker-php-ext-install imap pdo_sqlite zip
 
 # Enable Apache rewrite module
 RUN a2enmod rewrite
