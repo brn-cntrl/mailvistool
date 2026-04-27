@@ -113,13 +113,19 @@ async function loadEmails(filter = 'inbox') {
             
             document.querySelectorAll('.recipient-select').forEach(el => {
                 const emailId = el.id.replace('recipient-select-', '');
+                let isInitializing = true;
                 new TomSelect(el, {
                     plugins: ['remove_button'],
                     placeholder: 'Assign recipients...',
                     onChange: function(values) {
-                        assignRecipient(emailId, values);
+                        if (isInitializing) return;
+                        // TomSelect may pass a string or array; normalize to array
+                        let ids = Array.isArray(values) ? values : (values ? String(values).split(',') : []);
+                        ids = ids.filter(id => id !== '');
+                        assignRecipient(emailId, ids);
                     }
                 });
+                isInitializing = false;
             });
             
             updateSelectedCount();
@@ -406,7 +412,19 @@ async function sendSelectedEmails() {
         const result = await response.json();
         
         if (result.success) {
-            alert(result.message);
+            const data = result.data;
+            let msg = `✅ Sent: ${data.sent}`;
+            if (data.failed > 0) {
+                msg += `\n❌ Failed: ${data.failed}`;
+                if (data.errors && data.errors.length > 0) {
+                    msg += '\n\nReasons:';
+                    data.errors.forEach(e => {
+                        msg += `\n• Email #${e.email_id}: ${e.error}`;
+                    });
+                    msg += '\n\n💡 Tip: Make sure each email has a recipient assigned before sending.';
+                }
+            }
+            alert(msg);
             await loadStats();
             await loadEmails(currentFilter);
             await loadCharts();

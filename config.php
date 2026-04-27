@@ -51,6 +51,9 @@ return [
         // ],
     ],
     
+    // Sync settings
+    'sync_limit' => (int)($_ENV['SYNC_LIMIT'] ?? 50),
+    
     // Database path
     'database_path' => __DIR__ . '/database/mailvis.db',
 ];

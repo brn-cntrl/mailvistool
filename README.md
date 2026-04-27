@@ -5,49 +5,58 @@ A PHP-based email queue dashboard for managing, routing, and forwarding inbound 
 ## Features
 
 - **Email Queue Dashboard** — Tabular view of all inbound emails with status, priority, sender, subject, and assigned recipient
-- **IMAP Sync** — Fetches new emails from any IMAP server on demand; deduplicates by Message-ID
+- **IMAP Sync** — Fetches new emails from any IMAP server on demand; deduplicates by Message-ID; configurable sync limit
 - **Keyword Routing** — Automatically suggests a recipient based on configurable subject-line keyword rules (e.g. "project proposal" → David, "urgent" → Admin)
-- **Manual Assignment** — Override auto-routing from the dashboard via a per-row dropdown
+- **Manual Assignment** — Override auto-routing from the dashboard via a per-row multi-select dropdown (TomSelect)
 - **Email Forwarding** — Select one or more emails and forward them via SMTP; original message is wrapped in a standard forward block
 - **Stats Overview** — At-a-glance counts for total, unread, urgent (unsent high-priority), and sent emails
 - **Charts** — Bar chart of emails by intended recipient; line chart of email volume over the last 7 days (Chart.js)
 - **Action Tracking** — Mark emails as resolved; all actions (forwarded, resolved) are logged to an `actions` table
+- **Recipient Management** — Add, edit, and deactivate recipients from the dashboard UI
 - **Auto Database Setup** — `db.php` bootstraps the SQLite schema automatically on first run
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Backend | PHP 8+ with PDO / SQLite |
+| Backend | PHP 8.2+ with PDO / SQLite |
 | IMAP | [webklex/php-imap](https://github.com/Webklex/php-imap) ^6.2 |
 | SMTP | [phpmailer/phpmailer](https://github.com/PHPMailer/PHPMailer) ^7.0 |
+| Env | [vlucas/phpdotenv](https://github.com/vlucas/phpdotenv) ^5.6 |
 | Frontend | Vanilla HTML / CSS / JavaScript |
+| Dropdowns | [TomSelect](https://tom-select.js.org/) (CDN) |
 | Charts | [Chart.js](https://www.chartjs.org/) (CDN) |
-| Test mail server | [GreenMail](https://greenmail-mail-test.github.io/greenmail/) standalone JAR (not included) |
+| Container | Docker (PHP 8.2 Apache + Composer) |
 
 ## Project Structure
 
 ```
 MailVisTool/
+├── Dockerfile              # PHP 8.2-apache image with imap, pdo_sqlite, zip
+├── docker-compose.yml      # Single-container setup with volume mounts
 ├── index.php               # Dashboard HTML page
 ├── api.php                 # REST API consumed by the frontend
 ├── sync.php                # EmailSync class — fetches from IMAP, writes to DB
 ├── send_emails.php         # EmailForwarder class — forwards via SMTP
 ├── db.php                  # Database singleton (auto-creates schema on first use)
-├── config.php              # Loads env vars; sets IMAP / SMTP / routing config
+├── config.php              # Loads env vars; sets IMAP / SMTP / sync / routing config
+├── router.php              # PHP built-in server router (for local dev without Docker)
 ├── .env                    # Your local credentials (not committed)
 ├── .env.example            # Template — copy to .env and fill in values
-├── schema.sql              # SQLite schema (emails, routing_rules, actions)
+├── schema.sql              # SQLite schema (emails, routing_rules, actions, recipients)
 ├── setup_database.php      # One-time DB setup script (optional, db.php handles it)
 ├── migrate_add_forwarding.php  # Migration: adds forwarding columns to emails table
+├── migrate_recipients.php  # Migration: imports recipients from config.php to DB
 ├── test_db.php             # Diagnostic: verifies DB connection and table list
+├── test_smtp.php           # Test: sends a self-addressed SMTP test email
 ├── test_greenmail.php      # Test: sends an email via SMTP and reads it back via IMAP
 ├── inspect_metadata.php    # Test: sends several emails and prints all IMAP metadata
 ├── full_metadata_test.php  # Same as inspect_metadata.php
 ├── check_sent_emails.php   # CLI utility: lists emails forwarded from the dashboard
 ├── composer.json
+├── composer.lock
 ├── assets/
-│   ├── dashboard.js        # All frontend logic
+│   ├── dashboard.js        # All frontend logic (TomSelect, Chart.js, API calls)
 │   └── dashboard.css       # Dashboard styles
 └── database/
     └── mailvis.db          # SQLite database (auto-created)
@@ -55,9 +64,69 @@ MailVisTool/
 
 ## Installation
 
-### 1. Install PHP
+### Option A: Docker (Recommended)
 
-The app requires PHP 8.1 or newer with the `pdo` and `pdo_sqlite` extensions. These are included in most standard PHP distributions.
+Docker is the simplest way to run MailOps — no local PHP or Composer needed.
+
+#### 1. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your IMAP/SMTP credentials:
+
+```env
+IMAP_HOST=mail.example.com
+IMAP_PORT=993
+IMAP_USERNAME=inbox@example.com
+IMAP_PASSWORD=your-password
+IMAP_ENCRYPTION=ssl
+IMAP_VALIDATE_CERT=true
+
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USERNAME=sender@example.com
+SMTP_PASSWORD=your-password
+SMTP_ENCRYPTION=ssl
+SMTP_FROM_EMAIL=dashboard@example.com
+SMTP_FROM_NAME="Email Dashboard"
+
+# Number of emails to fetch per sync (default: 50)
+SYNC_LIMIT=50
+```
+
+> **Note:** If `SMTP_FROM_NAME` contains spaces, it must be wrapped in double quotes.
+
+#### 2. Build and start
+
+```bash
+docker compose up -d --build
+```
+
+#### 3. Open the dashboard
+
+Navigate to [http://localhost:8080](http://localhost:8080).
+
+The SQLite database is created automatically on first request. Source files are volume-mounted, so edits take effect immediately without rebuilding.
+
+#### Docker architecture
+
+```
+docker-compose.yml
+└── mailops (PHP 8.2 + Apache)
+    ├── Volume: ./ → /var/www/html       (live code reload)
+    ├── Volume: ./database → writable DB  (persistent data)
+    └── Volume: /var/www/html/vendor      (preserved from image)
+```
+
+---
+
+### Option B: Local PHP
+
+#### 1. Install PHP
+
+The app requires PHP 8.2 or newer with the `pdo`, `pdo_sqlite`, and `imap` extensions.
 
 **macOS (Homebrew)**
 
@@ -69,7 +138,7 @@ brew install php
 
 ```bash
 sudo apt update
-sudo apt install php php-cli php-sqlite3
+sudo apt install php php-cli php-sqlite3 php-imap
 ```
 
 **Windows**
@@ -80,12 +149,12 @@ Verify your installation:
 
 ```bash
 php -v
-php -m | grep -E "pdo|sqlite"
+php -m | grep -E "pdo|sqlite|imap"
 ```
 
-### 2. Install Composer
+#### 2. Install Composer
 
-[Composer](https://getcomposer.org/) is the PHP dependency manager used to install the IMAP and SMTP libraries.
+[Composer](https://getcomposer.org/) is the PHP dependency manager used to install the IMAP, SMTP, and dotenv libraries.
 
 **macOS (Homebrew)**
 
@@ -105,7 +174,7 @@ php -r "unlink('composer-setup.php');"
 
 Download and run the [Composer installer](https://getcomposer.org/Composer-Setup.exe).
 
-### 3. Clone the repo and install dependencies
+#### 3. Clone the repo and install dependencies
 
 ```bash
 git clone <repo-url> MailVisTool
@@ -113,38 +182,19 @@ cd MailVisTool
 composer install
 ```
 
-### 4. Configure
-
-Copy the example environment file and fill in your IMAP and SMTP credentials:
+#### 4. Configure
 
 ```bash
 cp .env.example .env
 ```
 
-Then open `.env` and set your values:
-
-```env
-IMAP_HOST=mail.example.com
-IMAP_PORT=993
-IMAP_USERNAME=inbox@example.com
-IMAP_PASSWORD=your-password
-IMAP_ENCRYPTION=ssl
-IMAP_VALIDATE_CERT=true
-
-SMTP_HOST=smtp.example.com
-SMTP_PORT=465
-SMTP_USERNAME=sender@example.com
-SMTP_PASSWORD=your-password
-SMTP_ENCRYPTION=ssl
-SMTP_FROM_EMAIL=dashboard@example.com
-SMTP_FROM_NAME=Email Dashboard
-```
+Then open `.env` and set your values (see the Docker section above for the full template).
 
 Credentials are loaded at runtime via [vlucas/phpdotenv](https://github.com/vlucas/phpdotenv) — the `.env` file is read by [config.php](config.php) and should never be committed to version control.
 
 Routing rules can be added directly in [config.php](config.php) under the `routing_rules` key. Recipients are managed through the dashboard UI (stored in the `recipients` DB table) rather than in `config.php`.
 
-### 5. Set up the database
+#### 5. Set up the database
 
 The SQLite database is created automatically on the first request. To set it up manually and seed routing rules from `config.php`:
 
@@ -152,7 +202,7 @@ The SQLite database is created automatically on the first request. To set it up 
 php setup_database.php
 ```
 
-### 6. Serve the app
+#### 6. Serve the app
 
 Any PHP-capable web server works. For local development:
 
@@ -161,6 +211,39 @@ php -S localhost:8000
 ```
 
 Then open `http://localhost:8000` in your browser.
+
+## Configuration
+
+### Environment Variables
+
+All settings are configured via the `.env` file:
+
+| Variable | Default | Description |
+|---|---|---|
+| `IMAP_HOST` | — | IMAP server hostname |
+| `IMAP_PORT` | `993` | IMAP port |
+| `IMAP_USERNAME` | — | IMAP login |
+| `IMAP_PASSWORD` | — | IMAP password |
+| `IMAP_ENCRYPTION` | `ssl` | `ssl` or `tls` |
+| `IMAP_VALIDATE_CERT` | `true` | Set `false` for self-signed certs |
+| `SMTP_HOST` | — | SMTP server hostname |
+| `SMTP_PORT` | `465` | SMTP port |
+| `SMTP_USERNAME` | — | SMTP login |
+| `SMTP_PASSWORD` | — | SMTP password |
+| `SMTP_ENCRYPTION` | `ssl` | `ssl` or `tls` |
+| `SMTP_FROM_EMAIL` | — | Sender email address |
+| `SMTP_FROM_NAME` | `Email Dashboard` | Sender display name (quote if contains spaces) |
+| `SYNC_LIMIT` | `50` | Max number of emails to fetch per sync |
+
+### Sync Limit
+
+Control how many emails are fetched from the IMAP server per sync by setting `SYNC_LIMIT` in `.env`:
+
+```env
+SYNC_LIMIT=100
+```
+
+The value takes effect on the next sync (no restart needed when using Docker with volume mounts).
 
 ## Using GreenMail for Local Testing
 
@@ -200,12 +283,15 @@ IMAP_PORT=3143
 IMAP_USERNAME=test1@localhost
 IMAP_PASSWORD=test1
 IMAP_ENCRYPTION=
+IMAP_VALIDATE_CERT=false
 
 SMTP_HOST=localhost
 SMTP_PORT=3025
 SMTP_USERNAME=test1@localhost
 SMTP_PASSWORD=test1
 SMTP_ENCRYPTION=
+SMTP_FROM_EMAIL=test1@localhost
+SMTP_FROM_NAME=Test
 ```
 
 ### Verify the connection
@@ -233,7 +319,7 @@ php inspect_metadata.php
 | `uid` | INTEGER | IMAP UID |
 | `sender_name` / `sender_email` | TEXT | Parsed from headers |
 | `subject` | TEXT | |
-| `body_preview` | TEXT | First 200 characters of body |
+| `body_preview` | TEXT | First 500 characters of body |
 | `size` | INTEGER | Message size in bytes |
 | `date_received` | DATETIME | Date/time from IMAP |
 | `priority` | TEXT | `high` / `normal` / `low` |
@@ -303,8 +389,8 @@ All endpoints are served from [api.php](api.php) via query string (`?action=...`
 | `chart_by_recipient` | GET | Email counts grouped by recipient |
 | `chart_by_date` | GET | Email counts for last 7 days |
 | `rules` | GET | List all routing rules |
-| `sync` | POST | Trigger IMAP sync |
-| `assign_recipient` | POST | Override routing; params: `id`, `recipient` |
+| `sync` | POST | Trigger IMAP sync (respects `SYNC_LIMIT`) |
+| `assign_recipient` | POST | Assign recipients; params: `id`, `recipient_ids[]` |
 | `toggle_select` | POST | Set checkbox state; params: `id`, `selected` |
 | `get_recipients` | GET | Active recipients from the `recipients` table |
 | `add_recipient` | POST | Add a recipient; params: `name`, `email` |
@@ -318,9 +404,17 @@ All endpoints are served from [api.php](api.php) via query string (`?action=...`
 # Verify DB connection and table list
 php test_db.php
 
+# Test SMTP connectivity (sends a self-addressed email)
+php test_smtp.php
+
 # List all emails forwarded from the dashboard
 php check_sent_emails.php
 
-# Run any pending database migrations
+# Run database migrations
 php migrate_add_forwarding.php
+php migrate_recipients.php
 ```
+
+## License
+
+See [LICENSE.md](LICENSE.md).

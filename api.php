@@ -144,9 +144,13 @@ try {
                 $id = $_POST['id'] ?? 0;
                 $recipientIds = $_POST['recipient_ids'] ?? [];
 
+                error_log("assign_recipient: email_id=$id, raw recipient_ids=" . json_encode($recipientIds));
+
                 if (!is_array($recipientIds)) {
                     $recipientIds = explode(',', $recipientIds);
                 }
+
+                error_log("assign_recipient: parsed recipient_ids=" . json_encode($recipientIds));
 
                 // Clear existing assignments for this email
                 $stmt = $db->prepare('DELETE FROM email_recipients WHERE email_id = ?');

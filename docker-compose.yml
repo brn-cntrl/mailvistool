@@ -11,5 +11,7 @@ services:
       - ./database:/var/www/html/database
       # preserve vendor directory from the image
       - /var/www/html/vendor
+    env_file:
+      - .env
     environment:
       - APACHE_DOCUMENT_ROOT=/var/www/html
