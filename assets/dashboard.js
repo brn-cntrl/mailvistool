@@ -99,7 +99,7 @@ async function loadEmails(filter = 'inbox') {
                         <strong>${escapeHtml(email.sender_name || 'Unknown')}</strong><br>
                         <small>${escapeHtml(email.sender_email || '')}</small>
                     </td>
-                    <td onclick="showEmailDetail(${email.id})">${escapeHtml(email.subject)}</td>
+                    <td onclick="showEmailDetail(${email.id})" title="${escapeHtml(email.subject)}">${escapeHtml(email.subject)}</td>
                     <td id="recipient-cell-${email.id}" onclick="showEmailDetail(${email.id})">${escapeHtml(email.assigned_recipient_names || 'Unassigned')}</td>
                     <td onclick="event.stopPropagation();">
                         ${createRecipientDropdown(email.id, assignedRecipientIds)}

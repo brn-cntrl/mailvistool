@@ -157,11 +157,14 @@ body {
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    overflow-x: auto;  
+    -webkit-overflow-scrolling: touch; 
 }
 
 .email-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 900px;
 }
 
 .email-table thead {
@@ -182,6 +185,24 @@ body {
     padding: 16px;
     border-top: 1px solid #e2e8f0;
     font-size: 14px;
+}
+
+.email-table th:nth-child(5),
+.email-table td:nth-child(5) {
+    max-width: 200px;        /* subject column */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.email-table th:nth-child(8),
+.email-table td:nth-child(8) {
+    white-space: nowrap;     /* date column — prevents wrapping */
+    width: 120px;
+}
+
+.email-table td:nth-child(5) {
+    cursor: help;
 }
 
 .email-table tbody tr {
